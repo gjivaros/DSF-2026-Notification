@@ -64,6 +64,32 @@ export const Errors = {
     ),
   notFound: (message = 'Resource not found') =>
     new AppException(HttpStatus.NOT_FOUND, 'NOT_FOUND', message),
+  smsNotFound: () =>
+    new AppException(HttpStatus.NOT_FOUND, 'SMS_NOT_FOUND', 'SMS not found'),
+  quotaExceeded: () =>
+    new AppException(
+      HttpStatus.TOO_MANY_REQUESTS,
+      'QUOTA_EXCEEDED',
+      'Daily quota exceeded for this application',
+    ),
+  idempotencyKeyRequired: () =>
+    new AppException(
+      HttpStatus.BAD_REQUEST,
+      'IDEMPOTENCY_KEY_REQUIRED',
+      'Idempotency-Key header is required (1 to 255 characters)',
+    ),
+  idempotencyInProgress: () =>
+    new AppException(
+      HttpStatus.CONFLICT,
+      'IDEMPOTENCY_IN_PROGRESS',
+      'A request with this Idempotency-Key is still in progress',
+    ),
+  idempotencyKeyReused: () =>
+    new AppException(
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      'IDEMPOTENCY_KEY_REUSED',
+      'This Idempotency-Key was already used with a different request',
+    ),
   rateLimitExceeded: () =>
     new AppException(
       HttpStatus.TOO_MANY_REQUESTS,

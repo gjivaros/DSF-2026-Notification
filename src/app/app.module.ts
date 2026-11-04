@@ -9,6 +9,8 @@ import { AppThrottlerGuard } from '../common/app-throttler.guard';
 import { HttpExceptionFilter } from '../common/http-exception.filter';
 import { validateEnv } from '../config/env.validation';
 import { PrismaModule } from '../prisma/prisma.module';
+import { QuotaModule } from '../quota/quota.module';
+import { SmsModule } from '../sms/sms.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -24,6 +26,8 @@ import { AppService } from './app.service';
     }),
     PrismaModule,
     AuthModule,
+    QuotaModule,
+    SmsModule,
   ],
   controllers: [AppController],
   providers: [
