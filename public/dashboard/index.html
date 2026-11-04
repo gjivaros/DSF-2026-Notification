@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Passerelle SMS · Administration</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section id="login-view" class="login" hidden>
+    <form id="login-form" class="card login-card">
+      <h1>Passerelle SMS</h1>
+      <p class="muted">Espace d'administration</p>
+      <label>Email<input name="email" type="email" required autocomplete="username"></label>
+      <label>Mot de passe<input name="password" type="password" required autocomplete="current-password"></label>
+      <button type="submit" class="primary">Se connecter</button>
+    </form>
+  </section>
+
+  <div id="app-view" class="layout" hidden>
+    <aside class="sidebar">
+      <div class="brand">Passerelle SMS</div>
+      <nav id="nav"></nav>
+      <div class="user">
+        <div id="user-email"></div>
+        <div id="user-role" class="muted"></div>
+        <button id="logout" class="link">Se déconnecter</button>
+      </div>
+    </aside>
+    <main>
+      <header class="topbar">
+        <h2 id="page-title"></h2>
+        <label id="app-picker" class="picker" hidden>Application
+          <select id="app-select"></select>
+        </label>
+      </header>
+      <div id="content"></div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>
