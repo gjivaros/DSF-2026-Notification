@@ -1,6 +1,7 @@
 import { INestApplication, Type } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import { Test } from '@nestjs/testing';
+import request from 'supertest';
 import { Queue } from 'bullmq';
 import { AppModule } from '../../src/app/app.module';
 import { createValidationPipe } from '../../src/common/validation.pipe';
@@ -31,9 +32,13 @@ export const courrierHeaders = () => ({
   'X-Api-Key': process.env.SEED_COURRIER_API_KEY as string,
 });
 
-export const adminHeaders = () => ({
-  'X-Admin-Key': process.env.ADMIN_API_KEY as string,
-});
+export async function loginHeaders(app: INestApplication, email: string, password: string) {
+  const res = await request(app.getHttpServer()).post('/auth/login').send({ email, password }).expect(200);
+  return { Authorization: `Bearer ${res.body.token}` };
+}
+
+export const rootHeaders = (app: INestApplication) =>
+  loginHeaders(app, process.env.ROOT_ADMIN_EMAIL as string, process.env.ROOT_ADMIN_PASSWORD as string);
 
 // Removes the data created by tests; seeded applications are kept
 export async function cleanDatabase(app: INestApplication): Promise<void> {
@@ -45,6 +50,11 @@ export async function cleanDatabase(app: INestApplication): Promise<void> {
   await prisma.sms.deleteMany();
   await prisma.campaign.deleteMany();
   await prisma.quotaUsage.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.user.deleteMany({ where: { role: 'APP_ADMIN' } });
+  const seeded = { code: { notIn: ['ETATCIVIL', 'COURRIER'] } };
+  await prisma.applicationStatusHistory.deleteMany({ where: { application: seeded } });
+  await prisma.application.deleteMany({ where: seeded });
 }
 
 export async function waitFor<T>(probe: () => Promise<T | null | undefined | false>, timeoutMs = 5000): Promise<T> {

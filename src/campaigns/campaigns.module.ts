@@ -9,5 +9,6 @@ import { CampaignsService } from './campaigns.service';
   imports: [SmsModule, QuotaModule, IdempotencyModule],
   controllers: [CampaignsController],
   providers: [CampaignsService],
+  exports: [CampaignsService],
 })
 export class CampaignsModule {}

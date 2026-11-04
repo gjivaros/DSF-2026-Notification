@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
-import { sha256 } from '../src/common/crypto';
+import { hashPassword, sha256 } from '../src/common/crypto';
 
 const prisma = new PrismaClient();
 
@@ -40,6 +40,15 @@ async function main() {
         });
     console.log(`Seeded ${saved.code} (quota ${saved.dailyQuota}) webhookSecret=${saved.webhookSecret}`);
   }
+
+  // Root admin of the dashboard: the password is only set at creation
+  const email = requireEnv('ROOT_ADMIN_EMAIL').toLowerCase();
+  await prisma.user.upsert({
+    where: { email },
+    update: {},
+    create: { email, passwordHash: hashPassword(requireEnv('ROOT_ADMIN_PASSWORD')), role: 'ROOT' },
+  });
+  console.log(`Seeded root admin ${email}`);
 }
 
 main()

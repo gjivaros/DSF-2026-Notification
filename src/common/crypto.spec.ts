@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { decryptText, encryptText, hmacSha256Hex, safeEqual, sha256 } from './crypto';
+import { decryptText, encryptText, hashPassword, hmacSha256Hex, safeEqual, sha256, verifyPassword } from './crypto';
 
 describe('crypto', () => {
   const key = randomBytes(32).toString('hex');
@@ -35,5 +35,15 @@ describe('crypto', () => {
     expect(safeEqual('abc', 'abc')).toBe(true);
     expect(safeEqual('abc', 'abd')).toBe(false);
     expect(safeEqual('abc', 'abcd')).toBe(false);
+  });
+});
+
+describe('passwords', () => {
+  it('verifies a password against its scrypt hash', () => {
+    const stored = hashPassword('S3cret!');
+    expect(stored).toMatch(/^scrypt\$[0-9a-f]{32}\$[0-9a-f]{128}$/);
+    expect(verifyPassword('S3cret!', stored)).toBe(true);
+    expect(verifyPassword('wrong', stored)).toBe(false);
+    expect(verifyPassword('S3cret!', 'garbage')).toBe(false);
   });
 });

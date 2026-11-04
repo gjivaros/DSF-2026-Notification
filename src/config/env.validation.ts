@@ -28,7 +28,11 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
-  ADMIN_API_KEY: string;
+  SWAGGER_USER: string;
+
+  @IsString()
+  @IsNotEmpty()
+  SWAGGER_PASSWORD: string;
 
   @Matches(/^[0-9a-f]{64}$/i, { message: 'OTP_ENCRYPTION_KEY must be 32 bytes in hex' })
   OTP_ENCRYPTION_KEY: string;

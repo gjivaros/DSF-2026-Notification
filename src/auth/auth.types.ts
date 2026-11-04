@@ -1,7 +1,8 @@
-export type Role = 'APP' | 'ADMIN';
+export type Role = 'APP' | 'ROOT' | 'APP_ADMIN';
 
-export type Principal =
-  | { role: 'APP'; applicationId: string; code: string }
-  | { role: 'ADMIN' };
+export type AppPrincipal = { role: 'APP'; applicationId: string; code: string };
+export type UserPrincipal =
+  | { role: 'ROOT'; userId: string; email: string }
+  | { role: 'APP_ADMIN'; userId: string; email: string; applicationIds: string[] };
 
-export type AppPrincipal = Extract<Principal, { role: 'APP' }>;
+export type Principal = AppPrincipal | UserPrincipal;

@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
-import { adminHeaders, cleanDatabase, courrierHeaders, createTestApp, etatCivilHeaders } from './utils/test-app';
+import { cleanDatabase, courrierHeaders, createTestApp, etatCivilHeaders, rootHeaders } from './utils/test-app';
 
 describe('Admin dashboard (e2e)', () => {
   let app: INestApplication;
@@ -39,7 +39,7 @@ describe('Admin dashboard (e2e)', () => {
     await submit('0140000000', etatCivilHeaders());
     await submit('0190000000', courrierHeaders());
 
-    const res = await request(app.getHttpServer()).get('/admin/stats').set(adminHeaders()).expect(200);
+    const res = await request(app.getHttpServer()).get('/admin/stats').set(await rootHeaders(app)).expect(200);
     expect(res.body.total).toBe(3);
     expect(res.body.byApplication).toEqual(
       expect.arrayContaining([
@@ -50,7 +50,7 @@ describe('Admin dashboard (e2e)', () => {
     expect(res.body.byOperator).toHaveLength(3);
     expect(res.body.byStatus).toEqual([{ status: 'pending', count: 3 }]);
 
-    const apps = await request(app.getHttpServer()).get('/admin/applications').set(adminHeaders()).expect(200);
+    const apps = await request(app.getHttpServer()).get('/admin/applications').set(await rootHeaders(app)).expect(200);
     expect(apps.body).toEqual(
       expect.arrayContaining([expect.objectContaining({ code: 'ETATCIVIL', status: 'active', usedToday: 2 })]),
     );

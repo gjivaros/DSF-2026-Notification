@@ -14,6 +14,7 @@ import { validateEnv } from '../config/env.validation';
 import { redisConnection } from '../config/redis';
 import { CampaignsModule } from '../campaigns/campaigns.module';
 import { OperatorsModule } from '../operators/operators.module';
+import { UsersModule } from '../users/users.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { QuotaModule } from '../quota/quota.module';
@@ -45,6 +46,7 @@ import { AppService } from './app.service';
     WebhooksModule,
     CampaignsModule,
     AdminModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [

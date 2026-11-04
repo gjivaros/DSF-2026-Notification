@@ -49,6 +49,7 @@ model Application {
   status          ApplicationStatus          @default(active)
   createdAt       DateTime                   @default(now())
   statusHistory   ApplicationStatusHistory[]
+  members         ApplicationMember[]
   sms             Sms[]
   campaigns       Campaign[]
   quotaUsages     QuotaUsage[]
@@ -136,4 +137,50 @@ model IdempotencyKey {
   application    Application @relation(fields: [applicationId], references: [id])
 
   @@id([applicationId, key])
+}
+
+enum UserRole {
+  ROOT
+  APP_ADMIN
+}
+
+enum UserStatus {
+  active
+  disabled
+}
+
+// Human accounts for the admin dashboard
+model User {
+  id           String              @id @default(uuid())
+  email        String              @unique
+  // scrypt$<salt>$<hash>
+  passwordHash String
+  role         UserRole
+  status       UserStatus          @default(active)
+  createdAt    DateTime            @default(now())
+  memberships  ApplicationMember[]
+  sessions     Session[]
+}
+
+// An APP_ADMIN only manages the applications it is a member of
+model ApplicationMember {
+  userId        String
+  applicationId String
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, applicationId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  // SHA-256 of the bearer token, the token itself is never stored
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

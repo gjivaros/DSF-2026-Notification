@@ -84,6 +84,17 @@ export const Errors = {
       'TOO_MANY_RECIPIENTS',
       `A campaign accepts at most ${max} recipients`,
     ),
+  applicationNotFound: () =>
+    new AppException(HttpStatus.NOT_FOUND, 'APPLICATION_NOT_FOUND', 'Application not found'),
+  applicationSuspended: () =>
+    new AppException(HttpStatus.CONFLICT, 'APPLICATION_SUSPENDED', 'This application is suspended'),
+  applicationCodeTaken: () =>
+    new AppException(HttpStatus.CONFLICT, 'APPLICATION_CODE_TAKEN', 'An application already uses this code'),
+  userNotFound: () => new AppException(HttpStatus.NOT_FOUND, 'USER_NOT_FOUND', 'User not found'),
+  emailTaken: () =>
+    new AppException(HttpStatus.CONFLICT, 'EMAIL_TAKEN', 'A user already uses this email'),
+  rootUserImmutable: () =>
+    new AppException(HttpStatus.FORBIDDEN, 'ROOT_USER_IMMUTABLE', 'The root user cannot be modified here'),
   quotaExceeded: () =>
     new AppException(
       HttpStatus.TOO_MANY_REQUESTS,

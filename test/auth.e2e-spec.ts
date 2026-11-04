@@ -3,7 +3,7 @@ import request from 'supertest';
 import { CurrentPrincipal, Roles } from '../src/auth/auth.decorators';
 import { Principal } from '../src/auth/auth.types';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { adminHeaders, createTestApp, etatCivilHeaders } from './utils/test-app';
+import { createTestApp, etatCivilHeaders, rootHeaders } from './utils/test-app';
 
 @Controller('test-auth')
 class TestAuthController {
@@ -13,7 +13,7 @@ class TestAuthController {
     return principal;
   }
 
-  @Roles('ADMIN')
+  @Roles('ROOT')
   @Get('admin')
   admin(@CurrentPrincipal() principal: Principal) {
     return principal;
@@ -54,11 +54,21 @@ describe('Authentication and RBAC (e2e)', () => {
       .expect(401);
   });
 
-  it('rejects a wrong admin key', async () => {
-    await request(app.getHttpServer())
-      .get('/test-auth/admin')
-      .set({ 'X-Admin-Key': 'wrong' })
+  it('rejects a wrong password or an unknown session', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: process.env.ROOT_ADMIN_EMAIL, password: 'wrong' })
       .expect(401);
+    expect(res.body.code).toBe('INVALID_CREDENTIALS');
+    await request(app.getHttpServer()).get('/test-auth/admin').set({ Authorization: 'Bearer wrong' }).expect(401);
+  });
+
+  it('logs the root admin in and out', async () => {
+    const headers = await rootHeaders(app);
+    const me = await request(app.getHttpServer()).get('/auth/me').set(headers).expect(200);
+    expect(me.body).toMatchObject({ email: process.env.ROOT_ADMIN_EMAIL, role: 'ROOT' });
+    await request(app.getHttpServer()).post('/auth/logout').set(headers).expect(204);
+    await request(app.getHttpServer()).get('/auth/me').set(headers).expect(401);
   });
 
   it('authenticates an application', async () => {
@@ -90,7 +100,7 @@ describe('Authentication and RBAC (e2e)', () => {
   it('forbids an admin on an application route', async () => {
     const res = await request(app.getHttpServer())
       .get('/test-auth/app')
-      .set(adminHeaders())
+      .set(await rootHeaders(app))
       .expect(403);
     expect(res.body.code).toBe('FORBIDDEN');
   });
