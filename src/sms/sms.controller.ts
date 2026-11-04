@@ -1,3 +1,5 @@
+import { ApiTags } from '@nestjs/swagger';
+import { ApiAppAuth, ApiIdempotencyKey } from '../common/api-docs.decorators';
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { CurrentPrincipal, Roles } from '../auth/auth.decorators';
@@ -10,6 +12,8 @@ import { SmsService } from './sms.service';
 
 const smsIdPipe = new ParseUUIDPipe({ exceptionFactory: () => Errors.smsNotFound() });
 
+@ApiTags('SMS')
+@ApiAppAuth()
 @Controller('sms')
 @Roles('APP')
 export class SmsController {
@@ -18,6 +22,7 @@ export class SmsController {
     private readonly idempotency: IdempotencyService,
   ) {}
 
+  @ApiIdempotencyKey()
   @Post()
   async create(
     @CurrentPrincipal() principal: AppPrincipal,
@@ -41,6 +46,7 @@ export class SmsController {
     return this.smsService.cancel(principal, id);
   }
 
+  @ApiIdempotencyKey()
   @Post(':id/retry')
   async retry(
     @CurrentPrincipal() principal: AppPrincipal,

@@ -1,3 +1,5 @@
+import { ApiTags } from '@nestjs/swagger';
+import { ApiSessionAuth } from '../common/api-docs.decorators';
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put } from '@nestjs/common';
 import { Roles } from '../auth/auth.decorators';
 import { Errors } from '../common/errors';
@@ -6,6 +8,8 @@ import { UsersService } from './users.service';
 
 const userIdPipe = new ParseUUIDPipe({ exceptionFactory: () => Errors.userNotFound() });
 
+@ApiTags('Dashboard users (root)')
+@ApiSessionAuth()
 @Controller('admin/users')
 @Roles('ROOT')
 export class UsersController {

@@ -1,3 +1,5 @@
+import { ApiTags } from '@nestjs/swagger';
+import { ApiIdempotencyKey, ApiSessionAuth } from '../common/api-docs.decorators';
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { CurrentPrincipal, Roles } from '../auth/auth.decorators';
@@ -19,6 +21,8 @@ const campaignIdPipe = new ParseUUIDPipe({ exceptionFactory: () => Errors.campai
 
 // Routes used by the dashboard. Application-scoped routes act on behalf of the application,
 // through the same services, rules and quota as the public API.
+@ApiTags('Dashboard admin')
+@ApiSessionAuth()
 @Controller('admin')
 @Roles('ROOT', 'APP_ADMIN')
 export class AdminController {
@@ -83,6 +87,7 @@ export class AdminController {
     return this.smsService.findOne(await this.adminService.actAs(principal, appId), smsId);
   }
 
+  @ApiIdempotencyKey()
   @Post('applications/:appId/sms')
   async sendSms(
     @CurrentPrincipal() principal: UserPrincipal,
@@ -140,6 +145,7 @@ export class AdminController {
     return this.campaignsService.findOne(await this.adminService.actAs(principal, appId), campaignId);
   }
 
+  @ApiIdempotencyKey()
   @Post('applications/:appId/campaigns')
   async createCampaign(
     @CurrentPrincipal() principal: UserPrincipal,

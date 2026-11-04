@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import { Controller, Headers, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Public } from '../auth/auth.decorators';
@@ -5,6 +6,7 @@ import { WebhooksService } from './webhooks.service';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
 
+@ApiTags('Simulator')
 @Controller('simulator')
 export class WebhooksController {
   constructor(private readonly webhooksService: WebhooksService) {}

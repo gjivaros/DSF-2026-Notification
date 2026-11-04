@@ -1,3 +1,5 @@
+import { ApiTags } from '@nestjs/swagger';
+import { ApiAppAuth, ApiIdempotencyKey } from '../common/api-docs.decorators';
 import { Body, Controller, Get, HttpStatus, Param, ParseUUIDPipe, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { CurrentPrincipal, Roles } from '../auth/auth.decorators';
@@ -8,6 +10,8 @@ import { IdempotencyService } from '../idempotency/idempotency.service';
 import { CreateCampaignInput, ListCampaignsQuery } from './campaigns.inputs';
 import { CampaignsService } from './campaigns.service';
 
+@ApiTags('Campaigns')
+@ApiAppAuth()
 @Controller('campaigns')
 @Roles('APP')
 export class CampaignsController {
@@ -16,6 +20,7 @@ export class CampaignsController {
     private readonly idempotency: IdempotencyService,
   ) {}
 
+  @ApiIdempotencyKey()
   @Post()
   async create(
     @CurrentPrincipal() principal: AppPrincipal,
