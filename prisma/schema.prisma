@@ -32,20 +32,38 @@ enum FailureReason {
   ECHEC_OPERATEUR
 }
 
+enum ApplicationStatus {
+  active
+  suspended
+}
+
 model Application {
-  id              String           @id @default(uuid())
-  code            String           @unique
+  id              String                     @id @default(uuid())
+  code            String                     @unique
   name            String
   apiKeyHash      String
   dailyQuota      Int
+  // Webhook URL and secret are set together, or both null
   webhookUrl      String?
-  webhookSecret   String
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
+  webhookSecret   String?
+  status          ApplicationStatus          @default(active)
+  createdAt       DateTime                   @default(now())
+  statusHistory   ApplicationStatusHistory[]
   sms             Sms[]
   campaigns       Campaign[]
   quotaUsages     QuotaUsage[]
   idempotencyKeys IdempotencyKey[]
+}
+
+model ApplicationStatusHistory {
+  id            String            @id @default(uuid())
+  applicationId String
+  status        ApplicationStatus
+  reason        String?
+  changedAt     DateTime          @default(now())
+  application   Application       @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId, changedAt])
 }
 
 model Campaign {

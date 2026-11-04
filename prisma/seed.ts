@@ -19,18 +19,25 @@ async function main() {
   const webhookUrl = `${requireEnv('APP_URL')}/simulator/webhook-sink`;
 
   for (const app of applications) {
+    const existing = await prisma.application.findUnique({ where: { code: app.code } });
     const data = {
       name: app.name,
       dailyQuota: app.dailyQuota,
       apiKeyHash: sha256(requireEnv(app.apiKeyEnv)),
       webhookUrl,
+      // The webhook secret is generated once and kept on later seeds
+      webhookSecret: existing?.webhookSecret ?? randomBytes(32).toString('hex'),
     };
-    // The webhook secret is generated once and kept on later seeds
-    const saved = await prisma.application.upsert({
-      where: { code: app.code },
-      update: data,
-      create: { ...data, code: app.code, webhookSecret: randomBytes(32).toString('hex') },
-    });
+    // Status is left untouched on existing applications; a new one starts active with its first history entry
+    const saved = existing
+      ? await prisma.application.update({ where: { id: existing.id }, data })
+      : await prisma.application.create({
+          data: {
+            ...data,
+            code: app.code,
+            statusHistory: { create: { status: 'active', reason: 'Initial status' } },
+          },
+        });
     console.log(`Seeded ${saved.code} (quota ${saved.dailyQuota}) webhookSecret=${saved.webhookSecret}`);
   }
 }

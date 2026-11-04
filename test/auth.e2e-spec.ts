@@ -2,6 +2,7 @@ import { Controller, Get, INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { CurrentPrincipal, Roles } from '../src/auth/auth.decorators';
 import { Principal } from '../src/auth/auth.types';
+import { PrismaService } from '../src/prisma/prisma.service';
 import { adminHeaders, createTestApp, etatCivilHeaders } from './utils/test-app';
 
 @Controller('test-auth')
@@ -70,6 +71,20 @@ describe('Authentication and RBAC (e2e)', () => {
       applicationId: expect.any(String),
       code: 'ETATCIVIL',
     });
+  });
+
+  it('rejects a suspended application', async () => {
+    const prisma = app.get(PrismaService);
+    await prisma.application.update({ where: { code: 'ETATCIVIL' }, data: { status: 'suspended' } });
+    try {
+      const res = await request(app.getHttpServer())
+        .get('/test-auth/app')
+        .set(etatCivilHeaders())
+        .expect(401);
+      expect(res.body.code).toBe('INVALID_CREDENTIALS');
+    } finally {
+      await prisma.application.update({ where: { code: 'ETATCIVIL' }, data: { status: 'active' } });
+    }
   });
 
   it('forbids an admin on an application route', async () => {
