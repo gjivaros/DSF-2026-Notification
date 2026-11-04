@@ -10,6 +10,7 @@ import { AppThrottlerGuard } from '../common/app-throttler.guard';
 import { HttpExceptionFilter } from '../common/http-exception.filter';
 import { validateEnv } from '../config/env.validation';
 import { redisConnection } from '../config/redis';
+import { CampaignsModule } from '../campaigns/campaigns.module';
 import { OperatorsModule } from '../operators/operators.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -40,6 +41,7 @@ import { AppService } from './app.service';
     SmsModule,
     OperatorsModule,
     WebhooksModule,
+    CampaignsModule,
   ],
   controllers: [AppController],
   providers: [
