@@ -67,6 +67,10 @@ export class EnvironmentVariables {
   @IsInt()
   @Min(0)
   SIMULATOR_DLR_DELAY_MS: number = 1000;
+
+  @IsInt()
+  @Min(1)
+  SMS_RETRY_BASE_DELAY_MS: number = 2000;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

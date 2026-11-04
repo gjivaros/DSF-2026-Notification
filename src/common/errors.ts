@@ -66,6 +66,24 @@ export const Errors = {
     new AppException(HttpStatus.NOT_FOUND, 'NOT_FOUND', message),
   smsNotFound: () =>
     new AppException(HttpStatus.NOT_FOUND, 'SMS_NOT_FOUND', 'SMS not found'),
+  smsNotCancellable: () =>
+    new AppException(HttpStatus.CONFLICT, 'SMS_NOT_CANCELLABLE', 'Only a pending SMS can be cancelled'),
+  smsNotRetryable: () =>
+    new AppException(HttpStatus.CONFLICT, 'SMS_NOT_RETRYABLE', 'Only a failed SMS can be retried'),
+  campaignNotFound: () =>
+    new AppException(HttpStatus.NOT_FOUND, 'CAMPAIGN_NOT_FOUND', 'Campaign not found'),
+  invalidRecipients: (recipients: string[]) =>
+    new AppException(
+      HttpStatus.BAD_REQUEST,
+      'INVALID_RECIPIENTS',
+      `Invalid recipients: ${recipients.join(', ')}`,
+    ),
+  tooManyRecipients: (max: number) =>
+    new AppException(
+      HttpStatus.BAD_REQUEST,
+      'TOO_MANY_RECIPIENTS',
+      `A campaign accepts at most ${max} recipients`,
+    ),
   quotaExceeded: () =>
     new AppException(
       HttpStatus.TOO_MANY_REQUESTS,

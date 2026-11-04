@@ -27,10 +27,10 @@ describe('SMS submission (e2e)', () => {
     prisma = app.get(PrismaService);
   });
 
-  beforeEach(() => cleanDatabase(prisma));
+  beforeEach(() => cleanDatabase(app));
 
   afterAll(async () => {
-    await cleanDatabase(prisma);
+    await cleanDatabase(app);
     await app.close();
   });
 

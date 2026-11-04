@@ -1,3 +1,4 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
@@ -8,6 +9,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AppThrottlerGuard } from '../common/app-throttler.guard';
 import { HttpExceptionFilter } from '../common/http-exception.filter';
 import { validateEnv } from '../config/env.validation';
+import { redisConnection } from '../config/redis';
+import { OperatorsModule } from '../operators/operators.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { QuotaModule } from '../quota/quota.module';
 import { SmsModule } from '../sms/sms.module';
@@ -24,10 +27,17 @@ import { AppService } from './app.service';
         storage: new ThrottlerStorageRedisService(config.getOrThrow<string>('REDIS_URL')),
       }),
     }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: redisConnection(config.getOrThrow<string>('REDIS_URL')),
+      }),
+    }),
     PrismaModule,
     AuthModule,
     QuotaModule,
     SmsModule,
+    OperatorsModule,
   ],
   controllers: [AppController],
   providers: [
