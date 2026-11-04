@@ -1,8 +1,16 @@
 # Passerelle SMS centralisée
 
-Passerelle unique d'envoi de SMS pour les applications de l'État. Elle couvre l'authentification par application, les quotas journaliers en segments, le routage vers 3 opérateurs simulés (MTN, MOOV, CELTIIS), une file d'attente prioritaire, les retries, les webhooks signés et un tableau de bord admin.
+Passerelle unique d'envoi de SMS pour les applications de l'État. Elle couvre l'authentification par application, les quotas journaliers en segments, le routage vers 3 opérateurs simulés (MTN, MOOV, CELTIIS), une file d'attente prioritaire, les retries, les webhooks signés, un dashboard d'administration et une documentation Swagger.
 
 **Stack** : NestJS 11 · TypeScript · Prisma + PostgreSQL · BullMQ + Redis · Jest + supertest
+
+## Accès rapide (une fois lancé)
+
+| Quoi | URL | Identifiants (valeurs de `.env.sample`) |
+|---|---|---|
+| **Dashboard admin** | http://localhost:3000/dashboard | `root@sms-gateway.bj` / `ChangeMe-Root-2026` |
+| **Swagger** | http://localhost:3000/docs | basic auth `docs` / `change-me-docs-password` |
+| API des applications | http://localhost:3000 | voir « Accès de démonstration » ci-dessous |
 
 ## Lancer le projet
 
@@ -60,7 +68,20 @@ La base de test est créée et migrée automatiquement.
 | Etat civil | `ETATCIVIL` | `etatcivil-dev-api-key` | 100 segments |
 | Courrier | `COURRIER` | `courrier-dev-api-key` | 5 segments |
 
-L'admin s'authentifie avec le header `X-Admin-Key`, dont la valeur est `ADMIN_API_KEY` dans `.env` (par défaut `change-me-admin-key`).
+Le **root admin** est créé par le seed à partir de `ROOT_ADMIN_EMAIL` et `ROOT_ADMIN_PASSWORD`. Il se connecte au dashboard, ou à l'API via `POST /auth/login`, qui renvoie un token `Bearer` valable 8 h.
+
+## Dashboard d'administration
+
+Il est servi sur `/dashboard`, sous forme d'une page HTML avec du JavaScript simple. Il consomme les routes `/auth` et `/admin`.
+
+| Rôle | Ce qu'il peut faire |
+|---|---|
+| **ROOT** | Vue d'ensemble (volumes par application, opérateur et statut), créer une application (API key affichée une seule fois), suspendre ou réactiver avec historique, **ajouter des administrateurs** et leur attribuer des applications, désactiver un admin |
+| **APP_ADMIN** | Sur **ses** applications uniquement : voir les SMS et leurs statuts, annuler ou relancer, voir et **lancer des campagnes**, **envoyer un SMS de test** avec suivi en direct, voir la consommation du quota |
+
+Seul le root ajoute des administrateurs. Il les crée avec un mot de passe initial, qu'il leur transmet lui-même. Les envois faits depuis le dashboard passent par les mêmes services que l'API : mêmes règles, même quota, même idempotence.
+
+**Pour tester** : se connecter en root, puis dans *Administrateurs*, créer un admin rattaché à `ETATCIVIL`. Se reconnecter avec ce compte et utiliser *Envoyer un test*, avec un numéro finissant par 0, 7, 8 ou 9.
 
 ## Endpoints
 
@@ -76,8 +97,13 @@ Toutes les erreurs ont le format `{ "code": "...", "message": "..." }`, avec le 
 | POST | `/campaigns` | App + `Idempotency-Key` | Campagne INFO, 500 destinataires au plus (`recipients[]`, `text`, …) |
 | GET | `/campaigns`, `/campaigns/:id` | App | Campagnes, avec le nombre de SMS par statut |
 | GET | `/usage/daily` | App | Consommation du jour : `{day, quota, used, remaining}` |
-| GET | `/admin/stats?from&to` | Admin | Volumes par application, par opérateur et par statut (jour courant par défaut) |
-| GET | `/admin/applications` | Admin | Applications, statut, quota et consommation du jour |
+| POST | `/auth/login`, `/auth/logout` · GET `/auth/me` | Public / Bearer | Session du dashboard |
+| GET | `/admin/stats?from&to` | ROOT | Volumes par application, par opérateur et par statut (jour courant par défaut) |
+| GET · POST | `/admin/applications` | ROOT (lecture aussi APP_ADMIN) | Lister ou créer des applications |
+| PATCH · GET | `/admin/applications/:appId/status`, `/status-history` | ROOT | Suspendre ou réactiver, historique |
+| GET · POST | `/admin/users`, PUT `/admin/users/:id/applications`, PATCH `/admin/users/:id/status` | ROOT | Administrateurs d'application |
+| GET · POST | `/admin/applications/:appId/sms[/:smsId[/cancel\|/retry]]` | ROOT, APP_ADMIN (ses apps) | SMS de l'application, envoi de test |
+| GET · POST | `/admin/applications/:appId/campaigns[/:id]`, GET `/admin/applications/:appId/usage` | ROOT, APP_ADMIN (ses apps) | Campagnes et quota |
 | POST | `/operators/:operator/dlr` | Signature opérateur | Accusé de livraison (appelé par le simulateur) |
 | POST | `/simulator/webhook-sink` | Signature webhook | Récepteur de démonstration des webhooks clients |
 | GET | `/health` | Public | État de PostgreSQL et Redis |
@@ -108,7 +134,11 @@ curl -X POST localhost:3000/campaigns "${APP[@]}" -H 'Idempotency-Key: camp-1' \
   -d '{"recipients":["0150000000","0140000000","0190000000"],"text":"Fermeture exceptionnelle"}'
 
 curl localhost:3000/usage/daily "${APP[@]}"
-curl localhost:3000/admin/stats -H 'X-Admin-Key: change-me-admin-key'
+
+# Admin : connexion puis statistiques
+TOKEN=$(curl -s -X POST localhost:3000/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"root@sms-gateway.bj","password":"ChangeMe-Root-2026"}' | jq -r .token)
+curl localhost:3000/admin/stats -H "Authorization: Bearer $TOKEN"
 ```
 
 ## Simuler les erreurs opérateur
@@ -139,7 +169,9 @@ Le `webhookSecret` de chaque application est affiché dans les logs du seed. En 
 ## Fonctionnalités implémentées
 
 - [x] Authentification des applications par code et API key (hachée), statut `active`/`suspended` avec historique
-- [x] RBAC (rôles `APP` et `ADMIN`) et ABAC : une application ne voit que ses propres SMS et campagnes (404 sinon)
+- [x] RBAC (rôles `APP`, `ROOT` et `APP_ADMIN`) et ABAC : une application ou un admin d'application ne voit que ses propres ressources (404 sinon)
+- [x] Dashboard d'administration (`/dashboard`) : comptes root et admins d'application (email + mot de passe scrypt, sessions révocables), gestion des applications et des admins, SMS, campagnes, envoi de test
+- [x] Documentation Swagger (`/docs`) protégée par basic auth
 - [x] Validation des numéros (`01` + 8 chiffres) et routage par préfixe : CELTIIS 40-49, MTN 50-69, MOOV 90-99
 - [x] Calcul des segments (160 caractères en ASCII, 70 sinon), 6 segments au maximum
 - [x] Quota journalier en segments, remis à zéro à minuit GMT+1, réservé de façon atomique (pas de dépassement en concurrence)
@@ -160,4 +192,6 @@ Le `webhookSecret` de chaque application est affiché dans les logs du seed. En 
 - **Idempotence** : le hash de requête est un HMAC avec une clé serveur. Un simple SHA-256 du body permettrait de retrouver un code OTP par force brute.
 - **Accusés de livraison simulés** par un timer en mémoire : ils sont perdus si le process redémarre, ce qui est acceptable pour un simulateur.
 - **Rate limit** : il se base sur `X-App-Code` avant l'authentification. Un tiers qui connaît le code d'une application pourrait épuiser son compteur.
-- **Évolution prévue, non implémentée** : un dashboard admin multi-utilisateurs, avec un admin root connecté par email et mot de passe et des utilisateurs invités par application. Aujourd'hui, l'admin utilise une clé unique.
+- **Dashboard sans framework** : une page HTML avec du JavaScript simple, servie par Nest, sans dépendance ni build front.
+- **Sessions** : token opaque, dont seul le SHA-256 est stocké en base. Il est révocable (déconnexion, désactivation d'un admin), sans JWT ni dépendance supplémentaire.
+- **Limites** : pas d'envoi d'email d'invitation (le mot de passe initial est transmis par le root) et pas de verrouillage dédié contre le brute force sur `/auth/login` (seulement le rate limit par IP).
