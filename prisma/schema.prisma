@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Operator {
+  MTN
+  MOOV
+  CELTIIS
+}
+
+enum SmsCategory {
+  OTP
+  INFO
+}
+
+enum SmsStatus {
+  pending
+  transmitted
+  delivered
+  failed
+  cancelled
+}
+
+enum FailureReason {
+  ECHEC_TEMPORAIRE
+  ECHEC_DEFINITIF
+  ECHEC_OPERATEUR
+}
+
+model Application {
+  id              String           @id @default(uuid())
+  code            String           @unique
+  name            String
+  apiKeyHash      String
+  dailyQuota      Int
+  webhookUrl      String?
+  webhookSecret   String
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  sms             Sms[]
+  campaigns       Campaign[]
+  quotaUsages     QuotaUsage[]
+  idempotencyKeys IdempotencyKey[]
+}
+
+model Campaign {
+  id             String      @id @default(uuid())
+  applicationId  String
+  text           String
+  segments       Int
+  recipientCount Int
+  reference      String?
+  scheduledAt    DateTime?
+  createdAt      DateTime    @default(now())
+  application    Application @relation(fields: [applicationId], references: [id])
+  sms            Sms[]
+
+  @@index([applicationId, createdAt])
+}
+
+model Sms {
+  id                String         @id @default(uuid())
+  applicationId     String
+  campaignId        String?
+  recipient         String
+  operator          Operator
+  category          SmsCategory
+  // INFO in clear text, OTP encrypted (AES-256-GCM); set to null once delivered or cancelled
+  text              String?
+  isUnicode         Boolean
+  length            Int
+  segments          Int
+  status            SmsStatus      @default(pending)
+  failureReason     FailureReason?
+  attempts          Int            @default(0)
+  manualRetries     Int            @default(0)
+  reference         String?
+  scheduledAt       DateTime?
+  sendAt            DateTime
+  operatorMessageId String?        @unique
+  transmittedAt     DateTime?
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  cancelledAt       DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  application       Application    @relation(fields: [applicationId], references: [id])
+  campaign          Campaign?      @relation(fields: [campaignId], references: [id])
+
+  @@index([applicationId, createdAt])
+  @@index([campaignId, status])
+  @@index([status, operator])
+}
+
+model QuotaUsage {
+  applicationId String
+  // Calendar day in GMT+1
+  day           DateTime    @db.Date
+  usedSegments  Int         @default(0)
+  application   Application @relation(fields: [applicationId], references: [id])
+
+  @@id([applicationId, day])
+}
+
+model IdempotencyKey {
+  applicationId  String
+  key            String
+  requestHash    String
+  // null while the request is in progress
+  responseStatus Int?
+  responseBody   Json?
+  createdAt      DateTime    @default(now())
+  application    Application @relation(fields: [applicationId], references: [id])
+
+  @@id([applicationId, key])
+}

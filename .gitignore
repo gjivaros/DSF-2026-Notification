@@ -68,7 +68,7 @@ web_modules/
 # dotenv environment variable files
 .env
 .env.*
-!.env.example
+!.env.sample
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -147,3 +147,6 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# AlignFirst work files
+.plans
