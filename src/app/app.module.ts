@@ -11,6 +11,7 @@ import { HttpExceptionFilter } from '../common/http-exception.filter';
 import { validateEnv } from '../config/env.validation';
 import { redisConnection } from '../config/redis';
 import { OperatorsModule } from '../operators/operators.module';
+import { WebhooksModule } from '../webhooks/webhooks.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { QuotaModule } from '../quota/quota.module';
 import { SmsModule } from '../sms/sms.module';
@@ -38,6 +39,7 @@ import { AppService } from './app.service';
     QuotaModule,
     SmsModule,
     OperatorsModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [

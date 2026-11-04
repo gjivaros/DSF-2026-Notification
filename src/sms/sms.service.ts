@@ -9,10 +9,13 @@ import { computeSegments } from '../common/segments';
 import { businessDay, computeSendAt } from '../common/time';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotaService } from '../quota/quota.service';
+import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateSmsInput, ListSmsQuery } from './sms.inputs';
 import { SmsQueueService } from './sms.queue';
 
 type Tx = Prisma.TransactionClient;
+
+const FINAL_STATUSES: SmsStatus[] = [SmsStatus.delivered, SmsStatus.failed, SmsStatus.cancelled];
 
 export type SmsTransition = Prisma.SmsUpdateManyMutationInput & { status: SmsStatus };
 
@@ -25,6 +28,7 @@ export class SmsService {
     private readonly prisma: PrismaService,
     private readonly quota: QuotaService,
     private readonly queue: SmsQueueService,
+    private readonly webhooks: WebhooksService,
     config: ConfigService,
   ) {
     this.encryptionKey = config.getOrThrow('OTP_ENCRYPTION_KEY');
@@ -76,6 +80,8 @@ export class SmsService {
     if (count === 1) {
       const reason = data.failureReason ? ` reason=${String(data.failureReason)}` : '';
       this.logger.log(`sms=${id} ${from} -> ${data.status}${reason}`);
+      // Inside a transaction, the caller notifies once committed
+      if (!options.tx && FINAL_STATUSES.includes(data.status)) await this.webhooks.notify(id, data.status);
     }
     return count === 1;
   }
@@ -96,6 +102,7 @@ export class SmsService {
       return sms;
     });
     await this.queue.remove(sms);
+    await this.webhooks.notify(sms.id, SmsStatus.cancelled);
     return this.toView(sms);
   }
 

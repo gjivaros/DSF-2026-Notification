@@ -6,6 +6,7 @@ import { AppModule } from '../../src/app/app.module';
 import { createValidationPipe } from '../../src/common/validation.pipe';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { SMS_QUEUE } from '../../src/sms/sms.queue';
+import { WEBHOOKS_QUEUE } from '../../src/webhooks/webhooks.service';
 
 // Same setup as main.ts; extra controllers can be mounted for test-only routes
 export async function createTestApp(controllers: Type[] = []): Promise<INestApplication> {
@@ -36,7 +37,9 @@ export const adminHeaders = () => ({
 
 // Removes the data created by tests; seeded applications are kept
 export async function cleanDatabase(app: INestApplication): Promise<void> {
-  await app.get<Queue>(getQueueToken(SMS_QUEUE)).obliterate({ force: true });
+  for (const name of [SMS_QUEUE, WEBHOOKS_QUEUE]) {
+    await app.get<Queue>(getQueueToken(name)).obliterate({ force: true });
+  }
   const prisma = app.get(PrismaService);
   await prisma.idempotencyKey.deleteMany();
   await prisma.sms.deleteMany();
