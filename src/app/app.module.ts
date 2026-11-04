@@ -1,13 +1,15 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { AdminModule } from '../admin/admin.module';
 import { AuthGuard } from '../auth/auth.guard';
 import { AuthModule } from '../auth/auth.module';
 import { AppThrottlerGuard } from '../common/app-throttler.guard';
 import { HttpExceptionFilter } from '../common/http-exception.filter';
+import { LoggingInterceptor } from '../common/logging.interceptor';
 import { validateEnv } from '../config/env.validation';
 import { redisConnection } from '../config/redis';
 import { CampaignsModule } from '../campaigns/campaigns.module';
@@ -42,11 +44,13 @@ import { AppService } from './app.service';
     OperatorsModule,
     WebhooksModule,
     CampaignsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
     // Global guards run in this order: rate limit first, then authentication
     { provide: APP_GUARD, useClass: AppThrottlerGuard },
     { provide: APP_GUARD, useExisting: AuthGuard },
